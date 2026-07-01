@@ -48,10 +48,20 @@ class WrestlingGame:
 
     def handle_events(self):
         for event in pygame.event.get():
+
             if event.type == pygame.QUIT:
                 self.running = False
-            if event.type == pygame.KEYDOWN:
+
+            elif event.type == pygame.KEYDOWN:
                 handle_keydown(event, self)
+
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if self.mode == "menu":
+                    self.reset_game()
+
+            elif event.type == pygame.FINGERDOWN:
+                if self.mode == "menu":
+                    self.reset_game()
 
     def update(self):
         if self.mode == "menu" or self.game_over:
