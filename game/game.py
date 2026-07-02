@@ -1,5 +1,7 @@
 import pygame
 
+
+from game.console import CONSOLE_OPTIONS, get_default_console
 from game.settings import WIDTH, HEIGHT
 from game.player import create_players
 from game.animation import AnimationManager
@@ -16,6 +18,11 @@ class WrestlingGame:
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("Wrestling Two Player Game")
 
+
+
+        self.console_options = CONSOLE_OPTIONS
+        self.selected_console = 0
+        self.console_style = get_default_console()
         self.clock = pygame.time.Clock()
         self.ui = UI(self.screen)
         self.animation = AnimationManager()
