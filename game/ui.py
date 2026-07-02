@@ -15,12 +15,29 @@ class UI:
         img = font.render(text, True, color)
         self.screen.blit(img, (x, y))
 
+    def draw_splash_background(self):
+        self.screen.fill((5, 6, 12))
+
+        points = [(520, 0), (680, 0), (860, 650), (340, 650)]
+        spotlight = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        pygame.draw.polygon(spotlight, (255, 240, 180, 45), points)
+        self.screen.blit(spotlight, (0, 0))
+
+        pygame.draw.ellipse(self.screen, (18, 25, 45), (250, 390, 700, 190))
+        pygame.draw.ellipse(self.screen, (255, 215, 80), (270, 405, 660, 160), 5)
+        pygame.draw.ellipse(self.screen, (255, 255, 255), (330, 425, 540, 120), 2)
+        pygame.draw.ellipse(self.screen, (255, 215, 80), (520, 450, 160, 55), 4)
+
     def draw_menu(self):
-        self.screen.fill((8, 8, 8))
-        self.draw_text("SANDMAN COMBAT GAMES", 300, 110, (255, 255, 255), self.huge_font)
-        self.draw_text("Tap • Click • Press ENTER", 410, 230, (255, 220, 50), self.big_font)
-        self.draw_text("Green: WASD / C tie / SPACE shot / G turn / LSHIFT sprawl", 230, 330, (40, 255, 80), self.font)
-        self.draw_text("Red: Arrows / M tie / ENTER shot / ; turn / RSHIFT sprawl", 230, 375, (255, 70, 70), self.font)
+        self.draw_splash_background()
+
+        self.draw_text("SANDMAN COMBAT GAMES", 255, 70, (255, 255, 255), self.huge_font)
+        self.draw_text("> Quick Match", 455, 185, (255, 220, 50), self.big_font)
+        self.draw_text("  Career Mode", 455, 240, (220, 220, 220), self.big_font)
+        self.draw_text("  Training Arena", 455, 295, (220, 220, 220), self.big_font)
+        self.draw_text("  Settings", 455, 350, (220, 220, 220), self.big_font)
+
+        self.draw_text("Tap / Click / Press ENTER", 425, 610, (255, 220, 50), self.font)
 
     def draw_game(self, game):
         green = game.green
@@ -72,13 +89,7 @@ class UI:
         self.draw_text(game.last_action_text, 45, 545, (255, 255, 255), self.font)
         self.draw_text(game.last_points_text, 90, 570, (40, 255, 80), self.font)
 
-        pygame.draw.rect(self.screen, (18, 18, 18), (300, 590, 860, 55), border_radius=8)
-        self.draw_text("GREEN: WASD / C Tie / SPACE Shot / G Turn / LSHIFT Sprawl", 325, 602, (40, 255, 80), self.font)
-        self.draw_text("RED: Arrows / M Tie / ENTER Shot / ; Turn / RSHIFT Sprawl", 325, 625, (255, 70, 70), self.font)
-
-        self.draw_text(f"Green cooldown: {green.cooldown}", 35, 655, (40, 255, 80))
-        self.draw_text(f"Red cooldown: {red.cooldown}", 260, 655, (255, 70, 70))
-        self.draw_text("LOCAL TWO PLAYER: LIVE", 530, 655, (80, 180, 255))
+        self.draw_text("SANDMAN COMBAT GAMES · QUICK MATCH", 420, 615, (160, 160, 160), self.font)
 
         if game.game_over:
             self.draw_game_over(game.winner_text)
