@@ -30,14 +30,43 @@ class UI:
 
     def draw_menu(self):
         self.draw_splash_background()
-
         self.draw_text("SANDMAN COMBAT GAMES", 255, 70, (255, 255, 255), self.huge_font)
         self.draw_text("> Quick Match", 455, 185, (255, 220, 50), self.big_font)
         self.draw_text("  Career Mode", 455, 240, (220, 220, 220), self.big_font)
         self.draw_text("  Training Arena", 455, 295, (220, 220, 220), self.big_font)
         self.draw_text("  Settings", 455, 350, (220, 220, 220), self.big_font)
-
         self.draw_text("Tap / Click / Press ENTER", 425, 610, (255, 220, 50), self.font)
+
+    def draw_stamina_bars(self, game):
+        green_stamina = 0.82
+        red_stamina = 0.76
+
+        pygame.draw.rect(self.screen, (20, 20, 25), (25, 55, 300, 14), border_radius=6)
+        pygame.draw.rect(self.screen, (40, 255, 80), (25, 55, int(300 * green_stamina), 14), border_radius=6)
+
+        pygame.draw.rect(self.screen, (20, 20, 25), (875, 55, 300, 14), border_radius=6)
+        pygame.draw.rect(self.screen, (255, 70, 70), (875, 55, int(300 * red_stamina), 14), border_radius=6)
+
+    def draw_mobile_overlay(self):
+        pygame.draw.circle(self.screen, (8, 8, 12), (115, 575), 68)
+        pygame.draw.circle(self.screen, (35, 35, 45), (115, 575), 60)
+        pygame.draw.circle(self.screen, (255, 220, 50), (115, 575), 60, 2)
+        pygame.draw.circle(self.screen, (95, 95, 115), (115, 575), 26)
+        pygame.draw.circle(self.screen, (180, 180, 200), (115, 575), 26, 2)
+
+        buttons = [
+            ("△", 995, 550, (60, 220, 120)),
+            ("○", 1085, 585, (255, 80, 80)),
+            ("□", 905, 585, (255, 120, 200)),
+            ("×", 995, 635, (80, 160, 255)),
+        ]
+
+        for label, x, y, color in buttons:
+            pygame.draw.circle(self.screen, (8, 8, 12), (x, y), 42)
+            pygame.draw.circle(self.screen, (35, 35, 45), (x, y), 36)
+            pygame.draw.circle(self.screen, color, (x, y), 36, 3)
+            text = self.big_font.render(label, True, color)
+            self.screen.blit(text, (x - text.get_width() // 2, y - text.get_height() // 2))
 
     def draw_game(self, game):
         green = game.green
@@ -50,14 +79,8 @@ class UI:
         pygame.draw.rect(self.screen, (0, 0, 0), (0, 0, WIDTH, 80))
         self.draw_text(f"Green: {green.score}", 25, 20, (40, 255, 80), self.big_font)
         self.draw_text(f"Red: {red.score}", 250, 20, (255, 70, 70), self.big_font)
-
-        self.draw_text(f"Grapple: {game.grapple.state}", 500, 15, (80, 180, 255), self.font)
-        self.draw_text(f"Top: {game.grapple.top_wrestler}", 500, 42, (255, 220, 50), self.font)
-
-        turn_seconds = game.grapple.turn_timer // 60
-        self.draw_text(f"Turn Window: {turn_seconds}", 700, 42, (255, 220, 50), self.font)
-
         self.draw_text(f"Time: {minutes}:{seconds:02d}", 930, 18, (255, 255, 255), self.big_font)
+        self.draw_stamina_bars(game)
 
         pygame.draw.rect(self.screen, (38, 38, 38), (0, 80, WIDTH, 180))
         pygame.draw.rect(self.screen, (18, 32, 52), (0, 200, WIDTH, 80))
@@ -89,7 +112,7 @@ class UI:
         self.draw_text(game.last_action_text, 45, 545, (255, 255, 255), self.font)
         self.draw_text(game.last_points_text, 90, 570, (40, 255, 80), self.font)
 
-        self.draw_text("SANDMAN COMBAT GAMES · QUICK MATCH", 420, 615, (160, 160, 160), self.font)
+        self.draw_mobile_overlay()
 
         if game.game_over:
             self.draw_game_over(game.winner_text)
