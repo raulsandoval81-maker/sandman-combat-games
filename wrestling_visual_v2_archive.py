@@ -336,7 +336,7 @@ while running:
     # Gym wall
     pygame.draw.rect(screen, (38, 38, 38), (0, 80, WIDTH, 180))
     pygame.draw.rect(screen, (18, 32, 52), (0, 200, WIDTH, 80))
-    draw_text("WRESTLING ROOM", 400, 125, (255, 200, 50), huge_font)
+    draw_text("ARENA MODE", 400, 125, (255, 200, 50), huge_font)
 
     # Mat
     pygame.draw.rect(screen, (18, 25, 45), (40, 255, 1120, 330))

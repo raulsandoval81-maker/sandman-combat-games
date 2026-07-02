@@ -3,7 +3,9 @@ import pygame
 from game.settings import SPRITE_SIZE, SCENE_SIZE, CUTAWAY_FRAMES
 
 def load_sprite(filename, size=SPRITE_SIZE):
-    path = os.path.join("assets", "sprites", filename)
+    path = os.path.join("assets", "sprites", "neutral", filename)
+    if not os.path.exists(path):
+        path = os.path.join("assets", "sprites", filename)
     if not os.path.exists(path):
         print("Missing:", path)
         return None
@@ -25,6 +27,9 @@ class AnimationManager:
 
         if self.green_img:
             self.green_img = pygame.transform.flip(self.green_img, True, False)
+
+        if self.red_img:
+            self.red_img = pygame.transform.flip(self.red_img, True, False)
 
         self.scenes = {
             "green_takedown": load_scene("greentakedown.png"),
