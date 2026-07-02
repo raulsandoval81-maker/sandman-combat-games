@@ -17,8 +17,8 @@ class UI:
 
     def draw_menu(self):
         self.screen.fill((8, 8, 8))
-        self.draw_text("WRESTLING TWO PLAYER", 300, 110, (255, 255, 255), self.huge_font)
-        self.draw_text("Press ENTER to start", 410, 230, (255, 220, 50), self.big_font)
+        self.draw_text("SANDMAN COMBAT GAMES", 300, 110, (255, 255, 255), self.huge_font)
+        self.draw_text("Tap • Click • Press ENTER", 410, 230, (255, 220, 50), self.big_font)
         self.draw_text("Green: WASD / C tie / SPACE shot / G turn / LSHIFT sprawl", 230, 330, (40, 255, 80), self.font)
         self.draw_text("Red: Arrows / M tie / ENTER shot / ; turn / RSHIFT sprawl", 230, 375, (255, 70, 70), self.font)
 
