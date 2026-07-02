@@ -77,14 +77,18 @@ class UI:
         self.screen.fill((8, 8, 8))
 
         pygame.draw.rect(self.screen, (0, 0, 0), (0, 0, WIDTH, 80))
-        self.draw_text(f"Green: {green.score}", 25, 20, (40, 255, 80), self.big_font)
-        self.draw_text(f"Red: {red.score}", 250, 20, (255, 70, 70), self.big_font)
-        self.draw_text(f"Time: {minutes}:{seconds:02d}", 930, 18, (255, 255, 255), self.big_font)
+        self.draw_text(f"GREEN {green.score}", 25, 18, (40, 255, 80), self.big_font)
+
+        timer_text = self.big_font.render(f"{minutes}:{seconds:02d}", True, (255, 255, 255))
+        self.screen.blit(timer_text, (WIDTH // 2 - timer_text.get_width() // 2, 18))
+
+        red_text = self.big_font.render(f"{red.score} RED", True, (255, 70, 70))
+        self.screen.blit(red_text, (WIDTH - red_text.get_width() - 25, 18))
         self.draw_stamina_bars(game)
 
         pygame.draw.rect(self.screen, (38, 38, 38), (0, 80, WIDTH, 180))
         pygame.draw.rect(self.screen, (18, 32, 52), (0, 200, WIDTH, 80))
-        self.draw_text("WRESTLING ROOM", 400, 125, (255, 200, 50), self.huge_font)
+        self.draw_text("ARENA MODE", 400, 125, (255, 200, 50), self.huge_font)
 
         pygame.draw.rect(self.screen, (18, 25, 45), (40, 255, 1120, 330))
         pygame.draw.circle(self.screen, (255, 215, 80), (600, 420), 245, 7)
