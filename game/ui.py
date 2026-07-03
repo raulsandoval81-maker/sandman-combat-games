@@ -48,23 +48,29 @@ class UI:
         pygame.draw.rect(self.screen, (255, 70, 70), (875, 55, int(300 * red_stamina), 14), border_radius=6)
 
     def draw_mobile_overlay(self):
-        pygame.draw.circle(self.screen, (8, 8, 12), (115, 575), 68)
-        pygame.draw.circle(self.screen, (35, 35, 45), (115, 575), 60)
-        pygame.draw.circle(self.screen, (255, 220, 50), (115, 575), 60, 2)
-        pygame.draw.circle(self.screen, (95, 95, 115), (115, 575), 26)
-        pygame.draw.circle(self.screen, (180, 180, 200), (115, 575), 26, 2)
+        joystick_x = 95
+        joystick_y = HEIGHT - 105
+
+        pygame.draw.circle(self.screen, (8, 8, 12), (joystick_x, joystick_y), 58)
+        pygame.draw.circle(self.screen, (35, 35, 45), (joystick_x, joystick_y), 52)
+        pygame.draw.circle(self.screen, (255, 220, 50), (joystick_x, joystick_y), 52, 2)
+        pygame.draw.circle(self.screen, (95, 95, 115), (joystick_x, joystick_y), 23)
+        pygame.draw.circle(self.screen, (180, 180, 200), (joystick_x, joystick_y), 23, 2)
+
+        center_x = WIDTH - 130
+        center_y = HEIGHT - 120
 
         buttons = [
-            ("△", 995, 550, (60, 220, 120)),
-            ("○", 1085, 585, (255, 80, 80)),
-            ("□", 905, 585, (255, 120, 200)),
-            ("×", 995, 635, (80, 160, 255)),
+            ("△", center_x, center_y - 48, (60, 220, 120)),
+            ("○", center_x + 48, center_y, (255, 80, 80)),
+            ("□", center_x - 48, center_y, (255, 120, 200)),
+            ("×", center_x, center_y + 48, (80, 160, 255)),
         ]
 
         for label, x, y, color in buttons:
-            pygame.draw.circle(self.screen, (8, 8, 12), (x, y), 42)
-            pygame.draw.circle(self.screen, (35, 35, 45), (x, y), 36)
-            pygame.draw.circle(self.screen, color, (x, y), 36, 3)
+            pygame.draw.circle(self.screen, (8, 8, 12), (x, y), 32)
+            pygame.draw.circle(self.screen, (35, 35, 45), (x, y), 28)
+            pygame.draw.circle(self.screen, color, (x, y), 28, 3)
             text = self.big_font.render(label, True, color)
             self.screen.blit(text, (x - text.get_width() // 2, y - text.get_height() // 2))
 
