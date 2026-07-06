@@ -15,7 +15,7 @@ from game.grapple import GrappleState
 class WrestlingGame:
     def __init__(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
+        self.screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.SCALED | pygame.RESIZABLE)
         pygame.display.set_caption("Wrestling Two Player Game")
 
 
