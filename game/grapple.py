@@ -24,6 +24,7 @@ class GrappleState:
         self.top_wrestler = None
         self.bottom_wrestler = None
         self.turn_timer = 0
+        self.turn_used = False
 
     def update(self, green, red):
         if self.state == TOP_BOTTOM:
@@ -54,6 +55,7 @@ class GrappleState:
         self.top_wrestler = top_wrestler
         self.bottom_wrestler = "red" if top_wrestler == "green" else "green"
         self.turn_timer = TURN_WINDOW_SECONDS * 60
+        self.turn_used = False
         self.message = f"{top_wrestler.upper()} on top — turn window!"
 
     def tick_turn_timer(self):
@@ -64,7 +66,19 @@ class GrappleState:
                 self.message = "Turn window ended"
 
     def can_turn(self, wrestler):
-        return self.state == TOP_BOTTOM and self.top_wrestler == wrestler and self.turn_timer > 0
+        return (
+            self.state == TOP_BOTTOM
+            and self.top_wrestler == wrestler
+            and self.turn_timer > 0
+            and not self.turn_used
+        )
+
+    def record_turn(self, wrestler):
+        """Consume the single scoring turn available in this top possession."""
+        if not self.can_turn(wrestler):
+            return False
+        self.turn_used = True
+        return True
 
     def break_grapple(self):
         self.reset()
@@ -76,6 +90,8 @@ class GrappleState:
     def movement_speed(self):
         if self.state in (CONTACT, COLLAR_TIE):
             return GRAPPLE_SPEED_LIMIT
+        if self.state == TOP_BOTTOM:
+            return 0
         return None
 
 

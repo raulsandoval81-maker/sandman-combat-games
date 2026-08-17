@@ -1,20 +1,23 @@
-import os
+from pathlib import Path
 import pygame
 from game.settings import SPRITE_SIZE, SCENE_SIZE, CUTAWAY_FRAMES
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+
 def load_sprite(filename, size=SPRITE_SIZE):
-    path = os.path.join("assets", "sprites", "neutral", filename)
-    if not os.path.exists(path):
-        path = os.path.join("assets", "sprites", filename)
-    if not os.path.exists(path):
+    path = PROJECT_ROOT / "assets" / "sprites" / "neutral" / filename
+    if not path.exists():
+        path = PROJECT_ROOT / "assets" / "sprites" / filename
+    if not path.exists():
         print("Missing:", path)
         return None
     img = pygame.image.load(path).convert_alpha()
     return pygame.transform.smoothscale(img, size)
 
 def load_scene(filename, size=SCENE_SIZE):
-    path = os.path.join("assets", "scenes", filename)
-    if not os.path.exists(path):
+    path = PROJECT_ROOT / "assets" / "scenes" / filename
+    if not path.exists():
         print("Missing:", path)
         return None
     img = pygame.image.load(path).convert_alpha()

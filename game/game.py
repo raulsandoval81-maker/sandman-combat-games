@@ -74,8 +74,9 @@ class WrestlingGame:
         if self.mode == "menu" or self.game_over:
             return
 
-        keys = pygame.key.get_pressed()
-        handle_movement(keys, self.green, self.red, self.grapple)
+        if self.animation.cutaway_timer <= 0:
+            keys = pygame.key.get_pressed()
+            handle_movement(keys, self.green, self.red, self.grapple)
 
         self.green.tick()
         self.red.tick()
