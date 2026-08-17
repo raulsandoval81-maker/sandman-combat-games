@@ -9,6 +9,10 @@ from game.collision import in_range
 from game.scoring import award_points
 
 
+ACTION_NAMES = ("triangle", "circle", "square", "cross")
+JOYSTICK_DEADZONE = 0.15
+
+
 def clamp_players(green, red):
     green.x = max(PLAYER_MIN_X, min(green.x, PLAYER_MAX_X))
     green.y = max(PLAYER_MIN_Y, min(green.y, PLAYER_MAX_Y))
@@ -16,7 +20,7 @@ def clamp_players(green, red):
     red.y = max(PLAYER_MIN_Y, min(red.y, PLAYER_MAX_Y))
 
 
-def handle_movement(keys, green, red, grapple=None):
+def handle_movement(keys, green, red, grapple=None, green_direction=(0.0, 0.0)):
     speed = PLAYER_SPEED
 
     if grapple:
@@ -24,13 +28,15 @@ def handle_movement(keys, green, red, grapple=None):
         if grapple_speed is not None:
             speed = grapple_speed
 
-    if keys[pygame.K_a]:
+    direction_x, direction_y = green_direction
+
+    if keys[pygame.K_a] or direction_x < -JOYSTICK_DEADZONE:
         green.x -= speed
-    if keys[pygame.K_d]:
+    if keys[pygame.K_d] or direction_x > JOYSTICK_DEADZONE:
         green.x += speed
-    if keys[pygame.K_w]:
+    if keys[pygame.K_w] or direction_y < -JOYSTICK_DEADZONE:
         green.y -= speed
-    if keys[pygame.K_s]:
+    if keys[pygame.K_s] or direction_y > JOYSTICK_DEADZONE:
         green.y += speed
 
     if keys[pygame.K_LEFT]:
@@ -43,6 +49,48 @@ def handle_movement(keys, green, red, grapple=None):
         red.y += speed
 
     clamp_players(green, red)
+
+
+def handle_action_input(
+    action, game, player="green", direction=(0.0, 0.0), active_actions=frozenset()
+):
+    """Resolve a generic action through the existing keyboard combat paths.
+
+    Direction and active_actions are accepted now so future combinations can be
+    resolved here without coupling virtual buttons to wrestling rules.
+    """
+    if action not in ACTION_NAMES:
+        return False
+
+    if player == "green":
+        key_map = {
+            "triangle": (
+                pygame.K_g
+                if game.grapple.state == "TOP_BOTTOM"
+                and game.grapple.top_wrestler == "green"
+                else pygame.K_c
+            ),
+            "circle": pygame.K_LSHIFT,
+            "square": pygame.K_SPACE,
+            "cross": pygame.K_e,
+        }
+    elif player == "red":
+        key_map = {
+            "triangle": (
+                pygame.K_SEMICOLON
+                if game.grapple.state == "TOP_BOTTOM"
+                and game.grapple.top_wrestler == "red"
+                else pygame.K_m
+            ),
+            "circle": pygame.K_RSHIFT,
+            "square": pygame.K_RETURN,
+            "cross": pygame.K_k,
+        }
+    else:
+        return False
+
+    handle_keydown(pygame.event.Event(pygame.KEYDOWN, key=key_map[action]), game)
+    return True
 
 
 def handle_keydown(event, game):

@@ -7,7 +7,8 @@ from game.player import create_players
 from game.animation import AnimationManager
 from game.timer import MatchTimer
 from game.ui import UI
-from game.controls import handle_keydown, handle_movement
+from game.controls import handle_action_input, handle_keydown, handle_movement
+from game.mobile_input import MobileInput
 from game.scoring import check_tech_fall, decision_winner
 from game.grapple import GrappleState
 
@@ -25,6 +26,7 @@ class WrestlingGame:
         self.console_style = get_default_console()
         self.clock = pygame.time.Clock()
         self.ui = UI(self.screen)
+        self.mobile_input = MobileInput()
         self.animation = AnimationManager()
         self.timer = MatchTimer()
         self.grapple = GrappleState()
@@ -43,6 +45,7 @@ class WrestlingGame:
         self.animation.reset()
         self.timer.reset()
         self.grapple.reset()
+        self.mobile_input.reset()
         self.game_over = False
         self.winner_text = ""
         self.last_action_text = "Two-player match started"
@@ -65,10 +68,49 @@ class WrestlingGame:
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if self.mode == "menu":
                     self.reset_game()
+                elif event.button == 1 and not getattr(event, "touch", False):
+                    self.mobile_input.pointer_down(
+                        "mouse", event.pos, self.handle_mobile_action
+                    )
+
+            elif event.type == pygame.MOUSEMOTION:
+                if not getattr(event, "touch", False):
+                    self.mobile_input.pointer_motion("mouse", event.pos)
+
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 1 and not getattr(event, "touch", False):
+                    self.mobile_input.pointer_up("mouse")
 
             elif event.type == pygame.FINGERDOWN:
                 if self.mode == "menu":
                     self.reset_game()
+                else:
+                    self.mobile_input.pointer_down(
+                        event.finger_id,
+                        self.finger_position(event),
+                        self.handle_mobile_action,
+                    )
+
+            elif event.type == pygame.FINGERMOTION:
+                self.mobile_input.pointer_motion(
+                    event.finger_id, self.finger_position(event)
+                )
+
+            elif event.type == pygame.FINGERUP:
+                self.mobile_input.pointer_up(event.finger_id)
+
+    def finger_position(self, event):
+        width, height = self.screen.get_size()
+        return event.x * width, event.y * height
+
+    def handle_mobile_action(self, action):
+        handle_action_input(
+            action,
+            self,
+            player="green",
+            direction=self.mobile_input.joystick_vector,
+            active_actions=self.mobile_input.pressed_actions,
+        )
 
     def update(self):
         if self.mode == "menu" or self.game_over:
@@ -76,7 +118,13 @@ class WrestlingGame:
 
         if self.animation.cutaway_timer <= 0:
             keys = pygame.key.get_pressed()
-            handle_movement(keys, self.green, self.red, self.grapple)
+            handle_movement(
+                keys,
+                self.green,
+                self.red,
+                self.grapple,
+                self.mobile_input.joystick_vector,
+            )
 
         self.green.tick()
         self.red.tick()

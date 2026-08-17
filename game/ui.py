@@ -47,31 +47,32 @@ class UI:
         pygame.draw.rect(self.screen, (20, 20, 25), (875, 55, 300, 14), border_radius=6)
         pygame.draw.rect(self.screen, (255, 70, 70), (875, 55, int(300 * red_stamina), 14), border_radius=6)
 
-    def draw_mobile_overlay(self):
-        joystick_x = 95
-        joystick_y = HEIGHT - 105
+    def draw_mobile_overlay(self, mobile_input):
+        joystick_x, joystick_y = mobile_input.JOYSTICK_CENTER
+        knob_x, knob_y = mobile_input.joystick_knob_position
 
         pygame.draw.circle(self.screen, (8, 8, 12), (joystick_x, joystick_y), 58)
         pygame.draw.circle(self.screen, (35, 35, 45), (joystick_x, joystick_y), 52)
         pygame.draw.circle(self.screen, (255, 220, 50), (joystick_x, joystick_y), 52, 2)
-        pygame.draw.circle(self.screen, (95, 95, 115), (joystick_x, joystick_y), 23)
-        pygame.draw.circle(self.screen, (180, 180, 200), (joystick_x, joystick_y), 23, 2)
-
-        center_x = WIDTH - 130
-        center_y = HEIGHT - 120
+        pygame.draw.circle(self.screen, (95, 95, 115), (knob_x, knob_y), 23)
+        pygame.draw.circle(self.screen, (180, 180, 200), (knob_x, knob_y), 23, 2)
 
         buttons = [
-            ("△", center_x, center_y - 48, (60, 220, 120)),
-            ("○", center_x + 48, center_y, (255, 80, 80)),
-            ("□", center_x - 48, center_y, (255, 120, 200)),
-            ("×", center_x, center_y + 48, (80, 160, 255)),
+            ("triangle", "△", (60, 220, 120)),
+            ("circle", "○", (255, 80, 80)),
+            ("square", "□", (255, 120, 200)),
+            ("cross", "×", (80, 160, 255)),
         ]
 
-        for label, x, y, color in buttons:
+        for action, label, color in buttons:
+            x, y = mobile_input.button_centers[action]
+            pressed = action in mobile_input.pressed_actions
             pygame.draw.circle(self.screen, (8, 8, 12), (x, y), 32)
-            pygame.draw.circle(self.screen, (35, 35, 45), (x, y), 28)
+            fill = color if pressed else (35, 35, 45)
+            pygame.draw.circle(self.screen, fill, (x, y), 28)
             pygame.draw.circle(self.screen, color, (x, y), 28, 3)
-            text = self.big_font.render(label, True, color)
+            text_color = (8, 8, 12) if pressed else color
+            text = self.big_font.render(label, True, text_color)
             self.screen.blit(text, (x - text.get_width() // 2, y - text.get_height() // 2))
 
     def draw_game(self, game):
@@ -122,7 +123,7 @@ class UI:
         self.draw_text(game.last_action_text, 45, 545, (255, 255, 255), self.font)
         self.draw_text(game.last_points_text, 90, 570, (40, 255, 80), self.font)
 
-        self.draw_mobile_overlay()
+        self.draw_mobile_overlay(game.mobile_input)
 
         if game.game_over:
             self.draw_game_over(game.winner_text)
