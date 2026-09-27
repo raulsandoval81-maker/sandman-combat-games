@@ -60,23 +60,14 @@ def handle_movement(keys, green, red, grapple=None, green_direction=(0.0, 0.0)):
     red_dx = _keyboard_axis(keys[pygame.K_LEFT], keys[pygame.K_RIGHT])
     red_dy = _keyboard_axis(keys[pygame.K_UP], keys[pygame.K_DOWN])
 
-    # Neutral movement should feel planted instead of teleporting a fixed number
-    # of pixels every frame. Grapple states already reduce speed through the
-    # existing GrappleState, so the wrestling rules remain authoritative.
     green.set_move_intent(green_dx, green_dy, speed)
     red.set_move_intent(red_dx, red_dy, speed)
-
     clamp_players(green, red)
 
 
 def handle_action_input(
     action, game, player="green", direction=(0.0, 0.0), active_actions=frozenset()
 ):
-    """Resolve a generic action through the existing keyboard combat paths.
-
-    Direction and active_actions are accepted now so future combinations can be
-    resolved here without coupling virtual buttons to wrestling rules.
-    """
     if action not in ACTION_NAMES:
         return False
 
@@ -111,6 +102,49 @@ def handle_action_input(
     return True
 
 
+def _start_shot(game, attacker_name, attacker, defender, animation_key):
+    if attacker.cooldown > 0:
+        return
+
+    if not in_range(attacker, defender, 210):
+        game.last_action_text = f"{attacker_name.title()} is too far away to shoot"
+        game.last_points_text = "Close distance first"
+        return
+
+    if not game.grapple.start_shot(attacker_name):
+        game.last_action_text = "Win contact or tie control before shooting"
+        game.last_points_text = "Hand fight first"
+        return
+
+    attacker.cooldown = ATTACK_COOLDOWN_FRAMES
+    attacker.actions += 1
+    attacker.stop_motion()
+    defender.stop_motion()
+    game.last_action_text = f"{attacker_name.title()} attacks the legs!"
+    game.last_points_text = "DEFEND NOW · sprawl window"
+
+
+def _attempt_sprawl(game, wrestler_name, wrestler):
+    if game.grapple.state != "SCRAMBLE":
+        if game.grapple.state not in ("CONTACT", "COLLAR_TIE"):
+            game.last_action_text = f"{wrestler_name.title()} must be engaged to defend"
+            game.last_points_text = ""
+        else:
+            game.last_action_text = "No active shot to defend"
+            game.last_points_text = "Stay ready"
+        return
+
+    if not game.grapple.attempt_sprawl(wrestler_name):
+        game.last_action_text = f"{wrestler_name.title()} is attacking — cannot sprawl own shot"
+        game.last_points_text = ""
+        return
+
+    wrestler.actions += 1
+    wrestler.sprawl_timer = 35
+    game.last_action_text = f"{wrestler_name.title()} sprawls on the shot!"
+    game.last_points_text = "SCRAMBLE · hold position"
+
+
 def handle_keydown(event, game):
     green = game.green
     red = game.red
@@ -126,21 +160,28 @@ def handle_keydown(event, game):
             game.mode = "menu"
         return
 
-    # Cutaways represent committed actions; ignore buffered attacks during them.
+    # A finished-action cutaway locks new attacks. The live SCRAMBLE state does
+    # not start a cutaway, so the defender can still react with a sprawl.
     if animation.cutaway_timer > 0:
         return
 
-    # GRAPPLING CONTROLS
+    # HAND FIGHT / TIE CONTROL
     if event.key == pygame.K_c:
-        game.grapple.enter_collar_tie("green")
-        game.last_action_text = game.grapple.message
-        game.last_points_text = "Control"
+        if game.grapple.enter_collar_tie("green"):
+            game.last_action_text = game.grapple.message
+            game.last_points_text = "Green has inside control"
+        else:
+            game.last_action_text = "Green needs contact before tying up"
+            game.last_points_text = "Close distance"
         return
 
     if event.key == pygame.K_m:
-        game.grapple.enter_collar_tie("red")
-        game.last_action_text = game.grapple.message
-        game.last_points_text = "Control"
+        if game.grapple.enter_collar_tie("red"):
+            game.last_action_text = game.grapple.message
+            game.last_points_text = "Red has inside control"
+        else:
+            game.last_action_text = "Red needs contact before tying up"
+            game.last_points_text = "Close distance"
         return
 
     if event.key == pygame.K_b:
@@ -149,7 +190,7 @@ def handle_keydown(event, game):
         game.last_points_text = ""
         return
 
-    # GREEN TURN FROM TOP
+    # TOP CONTROL / TURN
     if event.key == pygame.K_g:
         if game.grapple.can_turn("green"):
             game.grapple.record_turn("green")
@@ -162,7 +203,6 @@ def handle_keydown(event, game):
             game.last_points_text = ""
         return
 
-    # RED TURN FROM TOP
     if event.key == pygame.K_SEMICOLON:
         if game.grapple.can_turn("red"):
             game.grapple.record_turn("red")
@@ -175,45 +215,49 @@ def handle_keydown(event, game):
             game.last_points_text = ""
         return
 
-    # GREEN DOUBLE LEG
-    if event.key == pygame.K_SPACE and green.cooldown == 0:
-        if game.grapple.state != "COLLAR_TIE":
-            game.last_action_text = "Green needs a tie-up first"
-            game.last_points_text = ""
-            return
-
-        if game.grapple.control != "green":
-            game.last_action_text = "Green needs control first"
-            game.last_points_text = ""
-            return
-
-        if in_range(green, red, 210):
-            if red.sprawl_timer > 0:
-                green.cooldown = ATTACK_COOLDOWN_FRAMES
-                game.last_action_text = "Red sprawled Green shot!"
-                game.last_points_text = "No score"
-                animation.start_cutaway("red_sprawl", 40)
-            else:
-                award_points(green, 2)
-                green.cooldown = ATTACK_COOLDOWN_FRAMES
-                game.last_action_text = "Green double leg from collar tie!"
-                game.last_points_text = "+2 takedown"
-                animation.start_cutaway("green_takedown")
-                game.grapple.start_top_bottom("green")
+    # SHOTS: contact is enough; collar-tie control improves position by gating
+    # the opponent out if they currently own the tie.
+    if event.key == pygame.K_SPACE:
+        _start_shot(game, "green", green, red, "green_takedown")
         return
 
-    elif event.key == pygame.K_e and green.cooldown == 0:
-        if game.grapple.state == "COLLAR_TIE" and game.grapple.control == "green" and in_range(green, red, 180):
+    if event.key == pygame.K_RETURN:
+        _start_shot(game, "red", red, green, "red_takedown")
+        return
+
+    # LIVE DEFENSE DURING SHOT WINDOW
+    if event.key == pygame.K_LSHIFT:
+        _attempt_sprawl(game, "green", green)
+        return
+
+    if event.key == pygame.K_RSHIFT:
+        _attempt_sprawl(game, "red", red)
+        return
+
+    # BIG MOVES remain tie-control attacks for now.
+    if event.key == pygame.K_e and green.cooldown == 0:
+        if (
+            game.grapple.state == "COLLAR_TIE"
+            and game.grapple.control == "green"
+            and in_range(green, red, 180)
+        ):
             award_points(green, 4)
             green.cooldown = ATTACK_COOLDOWN_FRAMES + 20
             game.last_action_text = "Green 4-point throw!"
             game.last_points_text = "+4"
             animation.start_cutaway("green_4pt")
             game.grapple.start_top_bottom("green")
+        else:
+            game.last_action_text = "Green needs tie control for the throw"
+            game.last_points_text = ""
         return
 
-    elif event.key == pygame.K_f and green.cooldown == 0:
-        if game.grapple.state == "COLLAR_TIE" and game.grapple.control == "green" and in_range(green, red, 160):
+    if event.key == pygame.K_f and green.cooldown == 0:
+        if (
+            game.grapple.state == "COLLAR_TIE"
+            and game.grapple.control == "green"
+            and in_range(green, red, 160)
+        ):
             award_points(green, 5)
             green.cooldown = ATTACK_COOLDOWN_FRAMES + 30
             game.last_action_text = "Green suplex!"
@@ -222,75 +266,33 @@ def handle_keydown(event, game):
             game.grapple.start_top_bottom("green")
         return
 
-    elif event.key == pygame.K_LSHIFT and green.cooldown == 0:
-        if game.grapple.state not in ("CONTACT", "COLLAR_TIE"):
-            game.last_action_text = "Green must be engaged to sprawl"
-            game.last_points_text = ""
-            return
-        green.actions += 1
-        green.sprawl_timer = 35
-        green.cooldown = ATTACK_COOLDOWN_FRAMES
-        game.last_action_text = "Green sprawl defense"
-        game.last_points_text = "Defense active"
-        animation.start_cutaway("green_sprawl", 35)
-        return
-
-    # RED DOUBLE LEG
-    elif event.key == pygame.K_RETURN and red.cooldown == 0:
-        if game.grapple.state != "COLLAR_TIE":
-            game.last_action_text = "Red needs a tie-up first"
-            game.last_points_text = ""
-            return
-
-        if game.grapple.control != "red":
-            game.last_action_text = "Red needs control first"
-            game.last_points_text = ""
-            return
-
-        if in_range(red, green, 210):
-            if green.sprawl_timer > 0:
-                red.cooldown = ATTACK_COOLDOWN_FRAMES
-                game.last_action_text = "Green sprawled Red shot!"
-                game.last_points_text = "No score"
-                animation.start_cutaway("green_sprawl", 40)
-            else:
-                award_points(red, 2)
-                red.cooldown = ATTACK_COOLDOWN_FRAMES
-                game.last_action_text = "Red double leg from collar tie!"
-                game.last_points_text = "+2 takedown"
-                animation.start_cutaway("red_takedown")
-                game.grapple.start_top_bottom("red")
-        return
-
-    elif event.key == pygame.K_k and red.cooldown == 0:
-        if game.grapple.state == "COLLAR_TIE" and game.grapple.control == "red" and in_range(red, green, 180):
+    if event.key == pygame.K_k and red.cooldown == 0:
+        if (
+            game.grapple.state == "COLLAR_TIE"
+            and game.grapple.control == "red"
+            and in_range(red, green, 180)
+        ):
             award_points(red, 4)
             red.cooldown = ATTACK_COOLDOWN_FRAMES + 20
             game.last_action_text = "Red 4-point throw!"
             game.last_points_text = "+4"
             animation.start_cutaway("red_4pt")
             game.grapple.start_top_bottom("red")
+        else:
+            game.last_action_text = "Red needs tie control for the throw"
+            game.last_points_text = ""
         return
 
-    elif event.key == pygame.K_l and red.cooldown == 0:
-        if game.grapple.state == "COLLAR_TIE" and game.grapple.control == "red" and in_range(red, green, 160):
+    if event.key == pygame.K_l and red.cooldown == 0:
+        if (
+            game.grapple.state == "COLLAR_TIE"
+            and game.grapple.control == "red"
+            and in_range(red, green, 160)
+        ):
             award_points(red, 5)
             red.cooldown = ATTACK_COOLDOWN_FRAMES + 30
             game.last_action_text = "Red suplex!"
             game.last_points_text = "+5"
             animation.start_cutaway("red_5pt")
             game.grapple.start_top_bottom("red")
-        return
-
-    elif event.key == pygame.K_RSHIFT and red.cooldown == 0:
-        if game.grapple.state not in ("CONTACT", "COLLAR_TIE"):
-            game.last_action_text = "Red must be engaged to sprawl"
-            game.last_points_text = ""
-            return
-        red.actions += 1
-        red.sprawl_timer = 35
-        red.cooldown = ATTACK_COOLDOWN_FRAMES
-        game.last_action_text = "Red sprawl defense"
-        game.last_points_text = "Defense active"
-        animation.start_cutaway("red_sprawl", 35)
         return
