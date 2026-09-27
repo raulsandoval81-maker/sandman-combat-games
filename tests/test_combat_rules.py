@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 from game.game import WrestlingGame
-from game.grapple import GrappleState
+from game.grapple import GrappleState, SCRAMBLE, TOP_BOTTOM
 from game.player import Player
 from game.scoring import check_tech_fall
 
@@ -27,6 +27,39 @@ class CombatRuleTests(unittest.TestCase):
         grapple = GrappleState()
         grapple.start_top_bottom("red")
         self.assertEqual(grapple.movement_speed(), 0)
+
+    def test_contact_shot_enters_scramble_then_takedown(self):
+        grapple = GrappleState()
+        grapple.state = "CONTACT"
+
+        self.assertTrue(grapple.start_shot("green"))
+        self.assertEqual(grapple.state, SCRAMBLE)
+
+        for _ in range(20):
+            grapple._tick_scramble()
+
+        resolution = grapple.consume_resolution()
+        self.assertEqual(resolution["outcome"], "takedown")
+        self.assertEqual(resolution["attacker"], "green")
+        self.assertEqual(grapple.state, TOP_BOTTOM)
+        self.assertEqual(grapple.top_wrestler, "green")
+
+    def test_defender_can_sprawl_during_shot_window(self):
+        grapple = GrappleState()
+        grapple.state = "CONTACT"
+
+        self.assertTrue(grapple.start_shot("green"))
+        self.assertTrue(grapple.attempt_sprawl("red"))
+        self.assertFalse(grapple.attempt_sprawl("green"))
+
+        for _ in range(20):
+            grapple._tick_scramble()
+
+        resolution = grapple.consume_resolution()
+        self.assertEqual(resolution["outcome"], "sprawl")
+        self.assertEqual(resolution["defender"], "red")
+        self.assertEqual(grapple.state, "CONTACT")
+        self.assertEqual(grapple.control, "red")
 
     def test_cutaway_locks_held_movement_for_both_players(self):
         game = WrestlingGame.__new__(WrestlingGame)
