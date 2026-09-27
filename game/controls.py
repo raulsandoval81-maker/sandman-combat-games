@@ -145,6 +145,20 @@ def _attempt_sprawl(game, wrestler_name, wrestler):
     game.last_points_text = "SCRAMBLE · hold position"
 
 
+def _hand_fight(game, wrestler_name):
+    if not game.grapple.hand_fight(wrestler_name):
+        game.last_action_text = f"{wrestler_name.title()} needs contact to hand fight"
+        game.last_points_text = "Close distance"
+        return
+
+    progress, threshold = game.grapple.control_progress(wrestler_name)
+    game.last_action_text = game.grapple.message
+    if game.grapple.control == wrestler_name and progress >= threshold:
+        game.last_points_text = "INSIDE CONTROL WON · attacks opened"
+    else:
+        game.last_points_text = f"HAND FIGHT · {progress}/{threshold} pressure"
+
+
 def handle_keydown(event, game):
     green = game.green
     red = game.red
@@ -167,21 +181,11 @@ def handle_keydown(event, game):
 
     # HAND FIGHT / TIE CONTROL
     if event.key == pygame.K_c:
-        if game.grapple.enter_collar_tie("green"):
-            game.last_action_text = game.grapple.message
-            game.last_points_text = "Green has inside control"
-        else:
-            game.last_action_text = "Green needs contact before tying up"
-            game.last_points_text = "Close distance"
+        _hand_fight(game, "green")
         return
 
     if event.key == pygame.K_m:
-        if game.grapple.enter_collar_tie("red"):
-            game.last_action_text = game.grapple.message
-            game.last_points_text = "Red has inside control"
-        else:
-            game.last_action_text = "Red needs contact before tying up"
-            game.last_points_text = "Close distance"
+        _hand_fight(game, "red")
         return
 
     if event.key == pygame.K_b:
@@ -215,8 +219,7 @@ def handle_keydown(event, game):
             game.last_points_text = ""
         return
 
-    # SHOTS: contact is enough; collar-tie control improves position by gating
-    # the opponent out if they currently own the tie.
+    # SHOTS: contact is enough; tie control blocks the opponent's clean entry.
     if event.key == pygame.K_SPACE:
         _start_shot(game, "green", green, red, "green_takedown")
         return
