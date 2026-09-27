@@ -111,7 +111,7 @@ class WrestlingGame:
 
     def resolve_scramble(self):
         resolution = self.grapple.consume_resolution()
-        if not resolution:
+        if not isinstance(resolution, dict):
             return
 
         attacker = resolution["attacker"]
