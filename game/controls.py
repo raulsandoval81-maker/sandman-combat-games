@@ -19,6 +19,25 @@ def clamp_players(green, red):
     red.x = max(PLAYER_MIN_X, min(red.x, PLAYER_MAX_X))
     red.y = max(PLAYER_MIN_Y, min(red.y, PLAYER_MAX_Y))
 
+    if green.x in (PLAYER_MIN_X, PLAYER_MAX_X):
+        green.vx = 0.0
+    if green.y in (PLAYER_MIN_Y, PLAYER_MAX_Y):
+        green.vy = 0.0
+    if red.x in (PLAYER_MIN_X, PLAYER_MAX_X):
+        red.vx = 0.0
+    if red.y in (PLAYER_MIN_Y, PLAYER_MAX_Y):
+        red.vy = 0.0
+
+
+def _keyboard_axis(negative_pressed, positive_pressed):
+    return float(bool(positive_pressed)) - float(bool(negative_pressed))
+
+
+def _merge_axis(keyboard_value, analog_value):
+    if abs(analog_value) > JOYSTICK_DEADZONE:
+        return max(-1.0, min(1.0, analog_value))
+    return keyboard_value
+
 
 def handle_movement(keys, green, red, grapple=None, green_direction=(0.0, 0.0)):
     speed = PLAYER_SPEED
@@ -28,25 +47,24 @@ def handle_movement(keys, green, red, grapple=None, green_direction=(0.0, 0.0)):
         if grapple_speed is not None:
             speed = grapple_speed
 
-    direction_x, direction_y = green_direction
+    analog_x, analog_y = green_direction
+    green_dx = _merge_axis(
+        _keyboard_axis(keys[pygame.K_a], keys[pygame.K_d]),
+        analog_x,
+    )
+    green_dy = _merge_axis(
+        _keyboard_axis(keys[pygame.K_w], keys[pygame.K_s]),
+        analog_y,
+    )
 
-    if keys[pygame.K_a] or direction_x < -JOYSTICK_DEADZONE:
-        green.x -= speed
-    if keys[pygame.K_d] or direction_x > JOYSTICK_DEADZONE:
-        green.x += speed
-    if keys[pygame.K_w] or direction_y < -JOYSTICK_DEADZONE:
-        green.y -= speed
-    if keys[pygame.K_s] or direction_y > JOYSTICK_DEADZONE:
-        green.y += speed
+    red_dx = _keyboard_axis(keys[pygame.K_LEFT], keys[pygame.K_RIGHT])
+    red_dy = _keyboard_axis(keys[pygame.K_UP], keys[pygame.K_DOWN])
 
-    if keys[pygame.K_LEFT]:
-        red.x -= speed
-    if keys[pygame.K_RIGHT]:
-        red.x += speed
-    if keys[pygame.K_UP]:
-        red.y -= speed
-    if keys[pygame.K_DOWN]:
-        red.y += speed
+    # Neutral movement should feel planted instead of teleporting a fixed number
+    # of pixels every frame. Grapple states already reduce speed through the
+    # existing GrappleState, so the wrestling rules remain authoritative.
+    green.set_move_intent(green_dx, green_dy, speed)
+    red.set_move_intent(red_dx, red_dy, speed)
 
     clamp_players(green, red)
 
