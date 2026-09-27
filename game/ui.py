@@ -27,7 +27,6 @@ class UI:
         pygame.draw.rect(self.screen, (8, 10, 16), (0, 0, WIDTH, 112))
         pygame.draw.line(self.screen, (70, 60, 34), (0, 111), (WIDTH, 111), 1)
 
-        # Arena silhouettes keep the title screen feeling like a venue, not a menu.
         for x in range(35, WIDTH, 58):
             pygame.draw.circle(self.screen, (12, 14, 20), (x, 270), 18)
             pygame.draw.rect(self.screen, (10, 12, 17), (x - 15, 285, 30, 74), border_radius=8)
@@ -87,6 +86,23 @@ class UI:
         pygame.draw.rect(self.screen, (105, 90, 45), (x, 86, width, 30), 1, border_radius=15)
         self.screen.blit(text, (x + 14, 92))
 
+    def draw_control_pressure(self, game):
+        if game.grapple.state not in ("CONTACT", "COLLAR_TIE"):
+            return
+
+        green, threshold = game.grapple.control_progress("green")
+        red, _ = game.grapple.control_progress("red")
+        y = 122
+
+        self.draw_text("CONTROL", 548, y, (116, 121, 134), self.small_font)
+        for index in range(threshold):
+            gx = 500 - (index * 20)
+            rx = 700 + (index * 20)
+            g_fill = (40, 255, 80) if index < green else (38, 42, 50)
+            r_fill = (255, 70, 70) if index < red else (38, 42, 50)
+            pygame.draw.circle(self.screen, g_fill, (gx, y + 9), 6)
+            pygame.draw.circle(self.screen, r_fill, (rx, y + 9), 6)
+
     def draw_mobile_overlay(self, mobile_input):
         joystick_x, joystick_y = mobile_input.JOYSTICK_CENTER
         knob_x, knob_y = mobile_input.joystick_knob_position
@@ -144,6 +160,7 @@ class UI:
         self.screen.blit(red_text, (WIDTH - red_text.get_width() - 25, 16))
         self.draw_stamina_bars(game)
         self.draw_state_chip(game)
+        self.draw_control_pressure(game)
 
         pygame.draw.rect(self.screen, (20, 23, 31), (0, 82, WIDTH, 145))
         pygame.draw.rect(self.screen, (11, 17, 27), (0, 190, WIDTH, 92))
