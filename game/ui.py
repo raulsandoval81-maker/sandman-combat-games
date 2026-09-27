@@ -17,26 +17,49 @@ class UI:
         self.screen.blit(img, (x, y))
 
     def draw_splash_background(self):
-        self.screen.fill((5, 6, 12))
+        self.screen.fill((4, 5, 9))
 
-        points = [(520, 0), (680, 0), (860, 650), (340, 650)]
-        spotlight = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
-        pygame.draw.polygon(spotlight, (255, 240, 180, 45), points)
-        self.screen.blit(spotlight, (0, 0))
+        glow = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        pygame.draw.circle(glow, (214, 177, 72, 24), (600, 215), 330)
+        pygame.draw.circle(glow, (30, 52, 96, 28), (600, 525), 420)
+        self.screen.blit(glow, (0, 0))
 
-        pygame.draw.ellipse(self.screen, (18, 25, 45), (250, 390, 700, 190))
-        pygame.draw.ellipse(self.screen, (255, 215, 80), (270, 405, 660, 160), 5)
-        pygame.draw.ellipse(self.screen, (255, 255, 255), (330, 425, 540, 120), 2)
-        pygame.draw.ellipse(self.screen, (255, 215, 80), (520, 450, 160, 55), 4)
+        pygame.draw.rect(self.screen, (8, 10, 16), (0, 0, WIDTH, 112))
+        pygame.draw.line(self.screen, (70, 60, 34), (0, 111), (WIDTH, 111), 1)
+
+        # Arena silhouettes keep the title screen feeling like a venue, not a menu.
+        for x in range(35, WIDTH, 58):
+            pygame.draw.circle(self.screen, (12, 14, 20), (x, 270), 18)
+            pygame.draw.rect(self.screen, (10, 12, 17), (x - 15, 285, 30, 74), border_radius=8)
+
+        pygame.draw.rect(self.screen, (10, 15, 26), (120, 360, 960, 250), border_radius=34)
+        pygame.draw.ellipse(self.screen, (16, 24, 40), (165, 385, 870, 180))
+        pygame.draw.ellipse(self.screen, (218, 181, 76), (185, 400, 830, 150), 5)
+        pygame.draw.ellipse(self.screen, (225, 229, 237), (245, 420, 710, 110), 2)
+        pygame.draw.ellipse(self.screen, (218, 181, 76), (515, 447, 170, 55), 4)
 
     def draw_menu(self):
         self.draw_splash_background()
-        self.draw_text("SANDMAN COMBAT GAMES", 255, 70, (255, 255, 255), self.huge_font)
-        self.draw_text("> Quick Match", 455, 185, (255, 220, 50), self.big_font)
-        self.draw_text("  Career Mode", 455, 240, (220, 220, 220), self.big_font)
-        self.draw_text("  Training Arena", 455, 295, (220, 220, 220), self.big_font)
-        self.draw_text("  Settings", 455, 350, (220, 220, 220), self.big_font)
-        self.draw_text("Tap / Click / Press ENTER", 425, 610, (255, 220, 50), self.font)
+
+        self.draw_text("SANDMAN", 390, 52, (255, 255, 255), self.huge_font)
+        self.draw_text("COMBAT GAMES", 410, 120, (218, 181, 76), self.big_font)
+        self.draw_text("WRESTLING · EARLY ACCESS", 455, 173, (154, 160, 174), self.small_font)
+
+        panel = pygame.Rect(390, 235, 420, 245)
+        pygame.draw.rect(self.screen, (7, 9, 14), panel, border_radius=22)
+        pygame.draw.rect(self.screen, (74, 63, 36), panel, 1, border_radius=22)
+
+        pygame.draw.rect(self.screen, (218, 181, 76), (425, 270, 350, 58), border_radius=14)
+        quick = self.big_font.render("QUICK MATCH", True, (8, 9, 12))
+        self.screen.blit(quick, (600 - quick.get_width() // 2, 278))
+
+        self.draw_text("Career Mode", 470, 353, (198, 202, 212), self.font)
+        self.draw_text("Training Arena", 470, 392, (198, 202, 212), self.font)
+        self.draw_text("Settings", 470, 431, (132, 138, 151), self.font)
+
+        self.draw_text("ENTER THE MAT", 505, 535, (245, 224, 149), self.font)
+        self.draw_text("Tap · Click · Press ENTER", 470, 573, (132, 138, 151), self.small_font)
+        self.draw_text("Built in the Shadows.", 497, 635, (92, 97, 108), self.small_font)
 
     def draw_stamina_bars(self, game):
         green_stamina = 0.82
@@ -53,6 +76,7 @@ class UI:
             "NEUTRAL": "NEUTRAL",
             "CONTACT": "HAND FIGHT",
             "COLLAR_TIE": "COLLAR TIE",
+            "SCRAMBLE": "SCRAMBLE",
             "TOP_BOTTOM": "MAT CONTROL",
         }
         label = labels.get(game.grapple.state, game.grapple.state.replace("_", " "))
@@ -109,7 +133,6 @@ class UI:
 
         self.screen.fill((6, 8, 13))
 
-        # Broadcast-style scoreboard: information first, decoration second.
         pygame.draw.rect(self.screen, (4, 5, 8), (0, 0, WIDTH, 82))
         pygame.draw.line(self.screen, (45, 48, 58), (0, 81), (WIDTH, 81), 1)
         self.draw_text(f"GREEN  {green.score}", 25, 16, (40, 255, 80), self.big_font)
@@ -122,7 +145,6 @@ class UI:
         self.draw_stamina_bars(game)
         self.draw_state_chip(game)
 
-        # Arena depth layers.
         pygame.draw.rect(self.screen, (20, 23, 31), (0, 82, WIDTH, 145))
         pygame.draw.rect(self.screen, (11, 17, 27), (0, 190, WIDTH, 92))
         pygame.draw.line(self.screen, (55, 58, 68), (0, 226), (WIDTH, 226), 1)
@@ -143,7 +165,6 @@ class UI:
             self.draw_wrestler(animation.green_img, green.x, green.y, (40, 255, 80))
             self.draw_wrestler(animation.red_img, red.x, red.y, (255, 70, 70))
 
-        # Compact action feed instead of a large debug-looking box.
         pygame.draw.rect(self.screen, (8, 10, 15), (330, 610, 540, 66), border_radius=16)
         self.draw_text(game.last_action_text, 360, 621, (240, 242, 248), self.small_font)
         if game.last_points_text:
