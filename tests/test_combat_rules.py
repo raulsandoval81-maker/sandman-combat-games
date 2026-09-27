@@ -28,6 +28,36 @@ class CombatRuleTests(unittest.TestCase):
         grapple.start_top_bottom("red")
         self.assertEqual(grapple.movement_speed(), 0)
 
+    def test_hand_fight_requires_progress_before_inside_control(self):
+        grapple = GrappleState()
+        grapple.state = "CONTACT"
+
+        self.assertTrue(grapple.hand_fight("green"))
+        self.assertEqual(grapple.control_progress("green"), (1, 3))
+        self.assertIsNone(grapple.control)
+
+        grapple.hand_fight("green")
+        self.assertEqual(grapple.control_progress("green"), (2, 3))
+        self.assertIsNone(grapple.control)
+
+        grapple.hand_fight("green")
+        self.assertEqual(grapple.control_progress("green"), (3, 3))
+        self.assertEqual(grapple.state, "COLLAR_TIE")
+        self.assertEqual(grapple.control, "green")
+
+    def test_counter_hand_fight_strips_existing_tie_control(self):
+        grapple = GrappleState()
+        grapple.state = "CONTACT"
+        for _ in range(3):
+            grapple.hand_fight("green")
+
+        self.assertEqual(grapple.control, "green")
+        self.assertTrue(grapple.hand_fight("red"))
+        self.assertEqual(grapple.state, "CONTACT")
+        self.assertIsNone(grapple.control)
+        self.assertEqual(grapple.control_progress("green"), (2, 3))
+        self.assertEqual(grapple.control_progress("red"), (1, 3))
+
     def test_contact_shot_enters_scramble_then_takedown(self):
         grapple = GrappleState()
         grapple.state = "CONTACT"
