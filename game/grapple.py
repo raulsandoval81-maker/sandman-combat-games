@@ -12,6 +12,7 @@ GRAPPLE_SPEED_LIMIT = 2
 SCRAMBLE_SPEED_LIMIT = 1.25
 SCRAMBLE_FRAMES = 20
 TURN_WINDOW_SECONDS = 10
+HAND_FIGHT_THRESHOLD = 3
 
 
 class GrappleState:
@@ -56,13 +57,48 @@ class GrappleState:
                 self.reset()
                 self.message = "Separated"
 
-    def enter_collar_tie(self, wrestler):
-        if self.state == CONTACT:
+    def hand_fight(self, wrestler):
+        """Build inside-control pressure instead of granting a tie instantly."""
+        if self.state not in (CONTACT, COLLAR_TIE):
+            return False
+
+        if wrestler not in ("green", "red"):
+            return False
+
+        opponent = "red" if wrestler == "green" else "green"
+        own_attr = f"{wrestler}_control"
+        opponent_attr = f"{opponent}_control"
+
+        own_value = min(HAND_FIGHT_THRESHOLD, getattr(self, own_attr) + 1)
+        opponent_value = max(0, getattr(self, opponent_attr) - 1)
+        setattr(self, own_attr, own_value)
+        setattr(self, opponent_attr, opponent_value)
+
+        if own_value >= HAND_FIGHT_THRESHOLD:
             self.state = COLLAR_TIE
             self.control = wrestler
-            self.message = f"{wrestler.upper()} controls the tie"
-            return True
-        return False
+            self.message = f"{wrestler.upper()} wins inside control"
+        else:
+            if self.state == COLLAR_TIE and self.control == opponent:
+                # A successful counter strips the old tie before new control is won.
+                self.state = CONTACT
+                self.control = None
+            self.message = (
+                f"{wrestler.upper()} hand fights "
+                f"{own_value}/{HAND_FIGHT_THRESHOLD}"
+            )
+        return True
+
+    def enter_collar_tie(self, wrestler):
+        """Backward-compatible alias for the modern hand-fight action."""
+        return self.hand_fight(wrestler)
+
+    def control_progress(self, wrestler):
+        if wrestler == "green":
+            return self.green_control, HAND_FIGHT_THRESHOLD
+        if wrestler == "red":
+            return self.red_control, HAND_FIGHT_THRESHOLD
+        return 0, HAND_FIGHT_THRESHOLD
 
     def can_shoot(self, wrestler):
         if self.state == CONTACT:
@@ -111,6 +147,12 @@ class GrappleState:
         if self.defender_sprawled:
             self.state = CONTACT
             self.control = defender
+            if defender == "green":
+                self.green_control = min(HAND_FIGHT_THRESHOLD, self.green_control + 1)
+                self.red_control = max(0, self.red_control - 1)
+            else:
+                self.red_control = min(HAND_FIGHT_THRESHOLD, self.red_control + 1)
+                self.green_control = max(0, self.green_control - 1)
             self.message = f"{defender.upper()} stuffs the shot"
             self.pending_resolution = {
                 "outcome": "sprawl",
