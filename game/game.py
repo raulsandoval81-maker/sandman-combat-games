@@ -9,7 +9,7 @@ from game.timer import MatchTimer
 from game.ui import UI
 from game.controls import handle_action_input, handle_keydown, handle_movement
 from game.mobile_input import MobileInput
-from game.scoring import check_tech_fall, decision_winner
+from game.scoring import award_points, check_tech_fall, decision_winner
 from game.grapple import GrappleState
 
 
@@ -18,8 +18,6 @@ class WrestlingGame:
         pygame.init()
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.SCALED | pygame.RESIZABLE)
         pygame.display.set_caption("Wrestling Two Player Game")
-
-
 
         self.console_options = CONSOLE_OPTIONS
         self.selected_console = 0
@@ -58,7 +56,6 @@ class WrestlingGame:
 
     def handle_events(self):
         for event in pygame.event.get():
-
             if event.type == pygame.QUIT:
                 self.running = False
 
@@ -112,6 +109,26 @@ class WrestlingGame:
             active_actions=self.mobile_input.pressed_actions,
         )
 
+    def resolve_scramble(self):
+        resolution = self.grapple.consume_resolution()
+        if not resolution:
+            return
+
+        attacker = resolution["attacker"]
+        defender = resolution["defender"]
+
+        if resolution["outcome"] == "sprawl":
+            self.last_action_text = f"{defender.title()} stuffs the shot"
+            self.last_points_text = "No score · hand fight continues"
+            self.animation.start_cutaway(f"{defender}_sprawl", 34)
+            return
+
+        scorer = self.green if attacker == "green" else self.red
+        award_points(scorer, 2)
+        self.last_action_text = f"{attacker.title()} finishes the takedown"
+        self.last_points_text = "+2 takedown · top control"
+        self.animation.start_cutaway(f"{attacker}_takedown")
+
     def update(self):
         if self.mode == "menu" or self.game_over:
             return
@@ -130,6 +147,7 @@ class WrestlingGame:
         self.red.tick()
         self.animation.tick()
         self.grapple.update(self.green, self.red)
+        self.resolve_scramble()
         self.grapple.tick_turn_timer()
 
         tech_result = check_tech_fall(self.green, self.red)
