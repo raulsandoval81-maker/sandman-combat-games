@@ -112,10 +112,13 @@ class MobileControlTests(unittest.TestCase):
         game.green.x, game.green.y = 500, 400
         game.red.x, game.red.y = 580, 400
         game.grapple.state = CONTACT
-        handle_keydown(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_c), game)
+        for _ in range(3):
+            handle_keydown(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_c), game)
         self.assertEqual(game.grapple.control, "green")
         handle_keydown(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_SPACE), game)
-        self.assertEqual(game.green.score, 2)
+        self.assertEqual(game.grapple.state, "SCRAMBLE")
+        for _ in range(20):
+            game.grapple._tick_scramble()
         self.assertEqual(game.grapple.top_wrestler, "green")
 
     def test_generic_action_is_resolved_by_control_layer(self):
@@ -123,11 +126,23 @@ class MobileControlTests(unittest.TestCase):
         game.green.x, game.green.y = 500, 400
         game.red.x, game.red.y = 580, 400
         game.grapple.state = CONTACT
-        self.assertTrue(handle_action_input("triangle", game))
+        for _ in range(3):
+            self.assertTrue(handle_action_input("triangle", game))
         self.assertEqual(game.grapple.control, "green")
         self.assertTrue(handle_action_input("square", game))
-        self.assertEqual(game.green.score, 2)
+        self.assertEqual(game.grapple.state, "SCRAMBLE")
+        for _ in range(20):
+            game.grapple._tick_scramble()
         self.assertEqual(game.grapple.top_wrestler, "green")
+
+    def test_triangle_uses_snap_down_after_control_is_won(self):
+        game = self._combat_game()
+        game.grapple.state = CONTACT
+        for _ in range(3):
+            handle_action_input("triangle", game)
+        self.assertEqual(game.grapple.control, "green")
+        handle_action_input("triangle", game)
+        self.assertEqual(game.grapple.snap_setup, "green")
 
     def _combat_game(self):
         return SimpleNamespace(

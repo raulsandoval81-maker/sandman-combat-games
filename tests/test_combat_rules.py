@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 from game.game import WrestlingGame
-from game.grapple import GrappleState, SCRAMBLE, TOP_BOTTOM
+from game.grapple import GrappleState, SCRAMBLE, TOP_BOTTOM, SNAP_SHOT_FRAMES
 from game.player import Player
 from game.scoring import check_tech_fall
 
@@ -90,6 +90,41 @@ class CombatRuleTests(unittest.TestCase):
         self.assertEqual(resolution["defender"], "red")
         self.assertEqual(grapple.state, "CONTACT")
         self.assertEqual(grapple.control, "red")
+
+    def test_snap_down_shortens_shot_window_but_keeps_sprawl_available(self):
+        grapple = GrappleState()
+        grapple.state = "CONTACT"
+        for _ in range(3):
+            grapple.hand_fight("green")
+
+        self.assertFalse(grapple.snap_down("red"))
+        self.assertTrue(grapple.snap_down("green"))
+        self.assertTrue(grapple.start_shot("green"))
+        self.assertEqual(grapple.scramble_timer, SNAP_SHOT_FRAMES)
+        self.assertTrue(grapple.attempt_sprawl("red"))
+        for _ in range(SNAP_SHOT_FRAMES):
+            grapple._tick_scramble()
+        self.assertEqual(grapple.consume_resolution()["outcome"], "sprawl")
+
+    def test_snap_opening_expires_or_is_stripped_by_counter(self):
+        grapple = GrappleState()
+        grapple.state = "CONTACT"
+        for _ in range(3):
+            grapple.hand_fight("green")
+        grapple.snap_down("green")
+        grapple.hand_fight("red")
+        self.assertIsNone(grapple.snap_setup)
+
+        for _ in range(2):
+            grapple.hand_fight("green")
+        grapple.snap_down("green")
+        grapple.snap_timer = 1
+        green = Player("green", (500, 400))
+        red = Player("red", (580, 400))
+        grapple.update(green, red)
+        self.assertIsNone(grapple.snap_setup)
+        grapple.start_shot("green")
+        self.assertEqual(grapple.scramble_timer, 20)
 
     def test_cutaway_locks_held_movement_for_both_players(self):
         game = WrestlingGame.__new__(WrestlingGame)
