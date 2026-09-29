@@ -77,6 +77,9 @@ def handle_action_input(
                 pygame.K_g
                 if game.grapple.state == "TOP_BOTTOM"
                 and game.grapple.top_wrestler == "green"
+                else pygame.K_v
+                if game.grapple.state == "COLLAR_TIE"
+                and game.grapple.control == "green"
                 else pygame.K_c
             ),
             "circle": pygame.K_LSHIFT,
@@ -89,6 +92,9 @@ def handle_action_input(
                 pygame.K_SEMICOLON
                 if game.grapple.state == "TOP_BOTTOM"
                 and game.grapple.top_wrestler == "red"
+                else pygame.K_n
+                if game.grapple.state == "COLLAR_TIE"
+                and game.grapple.control == "red"
                 else pygame.K_m
             ),
             "circle": pygame.K_RSHIFT,
@@ -154,9 +160,18 @@ def _hand_fight(game, wrestler_name):
     progress, threshold = game.grapple.control_progress(wrestler_name)
     game.last_action_text = game.grapple.message
     if game.grapple.control == wrestler_name and progress >= threshold:
-        game.last_points_text = "INSIDE CONTROL WON · attacks opened"
+        game.last_points_text = "INSIDE CONTROL · V/N or △ to snap down"
     else:
         game.last_points_text = f"HAND FIGHT · {progress}/{threshold} pressure"
+
+
+def _snap_down(game, wrestler_name):
+    if game.grapple.snap_down(wrestler_name):
+        game.last_action_text = game.grapple.message
+        game.last_points_text = "SETUP · quick shot with a shorter sprawl window"
+    else:
+        game.last_action_text = f"{wrestler_name.title()} needs inside control to snap down"
+        game.last_points_text = "Win the hand fight first"
 
 
 def handle_keydown(event, game):
@@ -186,6 +201,14 @@ def handle_keydown(event, game):
 
     if event.key == pygame.K_m:
         _hand_fight(game, "red")
+        return
+
+    if event.key == pygame.K_v:
+        _snap_down(game, "green")
+        return
+
+    if event.key == pygame.K_n:
+        _snap_down(game, "red")
         return
 
     if event.key == pygame.K_b:

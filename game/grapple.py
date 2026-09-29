@@ -11,6 +11,8 @@ BREAK_DISTANCE = 150
 GRAPPLE_SPEED_LIMIT = 2
 SCRAMBLE_SPEED_LIMIT = 1.25
 SCRAMBLE_FRAMES = 20
+SNAP_SHOT_FRAMES = 12
+SNAP_SETUP_FRAMES = 90
 TURN_WINDOW_SECONDS = 10
 HAND_FIGHT_THRESHOLD = 3
 
@@ -34,6 +36,8 @@ class GrappleState:
         self.scramble_timer = 0
         self.defender_sprawled = False
         self.pending_resolution = None
+        self.snap_setup = None
+        self.snap_timer = 0
 
     def update(self, green, red):
         if self.state == TOP_BOTTOM:
@@ -42,6 +46,12 @@ class GrappleState:
         if self.state == SCRAMBLE:
             self._tick_scramble()
             return
+
+        if self.snap_timer > 0:
+            self.snap_timer -= 1
+            if self.snap_timer == 0:
+                self.snap_setup = None
+                self.message = "Snap-down opening closed"
 
         d = distance(green, red)
 
@@ -73,6 +83,9 @@ class GrappleState:
         opponent_value = max(0, getattr(self, opponent_attr) - 1)
         setattr(self, own_attr, own_value)
         setattr(self, opponent_attr, opponent_value)
+        if self.snap_setup == opponent:
+            self.snap_setup = None
+            self.snap_timer = 0
 
         if own_value >= HAND_FIGHT_THRESHOLD:
             self.state = COLLAR_TIE
@@ -100,6 +113,15 @@ class GrappleState:
             return self.red_control, HAND_FIGHT_THRESHOLD
         return 0, HAND_FIGHT_THRESHOLD
 
+    def snap_down(self, wrestler):
+        """A controlled tie creates a short opening for a quicker shot."""
+        if self.state != COLLAR_TIE or self.control != wrestler:
+            return False
+        self.snap_setup = wrestler
+        self.snap_timer = SNAP_SETUP_FRAMES
+        self.message = f"{wrestler.upper()} snaps down — shoot now!"
+        return True
+
     def can_shoot(self, wrestler):
         if self.state == CONTACT:
             return True
@@ -111,14 +133,20 @@ class GrappleState:
         if not self.can_shoot(wrestler):
             return False
 
+        setup_shot = self.snap_setup == wrestler and self.snap_timer > 0
         self.state = SCRAMBLE
         self.shot_attacker = wrestler
         self.shot_defender = "red" if wrestler == "green" else "green"
-        self.scramble_timer = SCRAMBLE_FRAMES
+        self.scramble_timer = SNAP_SHOT_FRAMES if setup_shot else SCRAMBLE_FRAMES
+        self.snap_setup = None
+        self.snap_timer = 0
         self.defender_sprawled = False
         self.pending_resolution = None
         self.control = wrestler
-        self.message = f"{wrestler.upper()} attacks — defend!"
+        self.message = (
+            f"{wrestler.upper()} shoots off the snap — defend!"
+            if setup_shot else f"{wrestler.upper()} attacks — defend!"
+        )
         return True
 
     def attempt_sprawl(self, wrestler):

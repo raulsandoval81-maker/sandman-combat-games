@@ -103,6 +103,11 @@ class UI:
             pygame.draw.circle(self.screen, g_fill, (gx, y + 9), 6)
             pygame.draw.circle(self.screen, r_fill, (rx, y + 9), 6)
 
+        if game.grapple.snap_setup:
+            label = f"{game.grapple.snap_setup.upper()} SNAP · SHOOT NOW"
+            rendered = self.small_font.render(label, True, (255, 225, 110))
+            self.screen.blit(rendered, (WIDTH // 2 - rendered.get_width() // 2, 154))
+
     def draw_mobile_overlay(self, mobile_input):
         joystick_x, joystick_y = mobile_input.JOYSTICK_CENTER
         knob_x, knob_y = mobile_input.joystick_knob_position
@@ -159,12 +164,15 @@ class UI:
         red_text = self.big_font.render(f"{red.score}  RED", True, (255, 70, 70))
         self.screen.blit(red_text, (WIDTH - red_text.get_width() - 25, 16))
         self.draw_stamina_bars(game)
-        self.draw_state_chip(game)
-        self.draw_control_pressure(game)
-
         pygame.draw.rect(self.screen, (20, 23, 31), (0, 82, WIDTH, 145))
         pygame.draw.rect(self.screen, (11, 17, 27), (0, 190, WIDTH, 92))
         pygame.draw.line(self.screen, (55, 58, 68), (0, 226), (WIDTH, 226), 1)
+        self.draw_state_chip(game)
+        self.draw_control_pressure(game)
+        self.draw_text(
+            "C/M hand fight  ·  V/N snap  ·  SPACE/ENTER shoot  ·  SHIFT sprawl",
+            295, 199, (130, 139, 154), self.small_font,
+        )
 
         mat_rect = pygame.Rect(40, 238, 1120, 362)
         pygame.draw.rect(self.screen, (14, 22, 38), mat_rect, border_radius=24)
